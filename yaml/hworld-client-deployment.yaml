@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hworld-client-deployment
+  labels:
+    app: hworld-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hworld-client
+  template:
+    metadata:
+      labels:
+        app: hworld-client
+    spec:
+      containers:
+      - name: hworld-client
+        image: hworld-client:0.0.11
+        ports:
+        - containerPort: 80

@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hworld-server-deployment
+  labels:
+    app: hworld-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hworld-server
+  template:
+    metadata:
+      labels:
+        app: hworld-server
+    spec:
+      containers:
+      - name: hworld-server
+        image: hworld-server:0.0.2
+        ports:
+        - containerPort: 80
