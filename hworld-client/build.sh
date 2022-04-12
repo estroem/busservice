@@ -1,5 +1,6 @@
 set -ex
 
+rm -rf target
 mkdir target
 go build -o target/main main.go
 

@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"log"
 	"net/http"
-	"time"
 
 	pb "hworld-client/grpc"
 
@@ -39,18 +39,29 @@ func talkToServer(data *data) {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-	defer conn.Close()
-	c := pb.NewGreeterClient(conn)
 
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *name})
+	client := pb.NewStreamServiceClient(conn)
+	in := &pb.Request{Id: 1}
+	stream, err := client.FetchResponse(context.Background(), in)
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Fatalf("open stream error %v", err)
 	}
-	log.Printf("Greeting: %s", r.GetMessage())
-	data.Num = r.GetMessage()
+
+	done := make(chan bool)
+
+	go func() {
+		for {
+			resp, err := stream.Recv()
+			if err == io.EOF {
+				done <- true //means stream is finished
+				return
+			}
+			if err != nil {
+				log.Fatalf("cannot receive %v", err)
+			}
+			data.Num = resp.Result
+		}
+	}()
 }
 
 func listen(data *data) {
