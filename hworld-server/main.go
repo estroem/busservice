@@ -71,8 +71,11 @@ func failOnError(err error, msg string) {
 func main() {
 	flag.Parse()
 
+	rabbitmq_username := GetConfig("rabbitmq_username")
+	rabbitmq_password := GetConfig("rabbitmq_password")
+
 	//setUpgRPCServer()
-	conn, err := amqp.Dial("amqp://default_user_8Umc7dr4LB1yLDzbY0T:ZC8Z-05HvbqlYBlhh44fep9j36ESp_Xf@definition.default.svc.cluster.local:5672/")
+	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@definition.default.svc.cluster.local:5672/", rabbitmq_username, rabbitmq_password))
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
