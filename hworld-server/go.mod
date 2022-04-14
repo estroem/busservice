@@ -1,5 +1,5 @@
 module hworld-client
 
-go 1.13
+go 1.18
 
 require github.com/streadway/amqp v1.0.0
