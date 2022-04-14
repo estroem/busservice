@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: hworld-server
-        image: hworld-server:0.0.3
+        image: hworld-server:0.0.9
         ports:
         - containerPort: 80
