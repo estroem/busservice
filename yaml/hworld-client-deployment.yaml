@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: hworld-client
-        image: hworld-client:0.0.19
+        image: hworld-client:0.0.1
         ports:
         - containerPort: 80
