@@ -20,7 +20,7 @@ go build -o target/main main.go config.go
 mv target/config.go.backup config.go
 
 # image name
-IMAGE=hworld-client
+IMAGE=server-timing
 VERSION=`cat VERSION`
 
 docker build -t $IMAGE:$VERSION .

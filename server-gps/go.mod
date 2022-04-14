@@ -1,4 +1,4 @@
-module hworld-client
+module server-gps
 
 go 1.18
 

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: hworld-client-service
+  name: server-timing-service
 spec:
   selector:
-    app: hworld-client
+    app: server-timing
   ports:
     - protocol: TCP
       port: 8080

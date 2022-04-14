@@ -13,7 +13,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: hworld-client-service
+                name: server-timing-service
                 port:
                   number: 8080
 

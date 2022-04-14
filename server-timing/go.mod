@@ -1,4 +1,4 @@
-module hworld-client
+module server-timing
 
 go 1.18
 

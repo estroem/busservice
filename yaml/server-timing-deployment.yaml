@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hworld-client-deployment
+  name: server-timing-deployment
   labels:
-    app: hworld-client
+    app: server-timing
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: hworld-client
+      app: server-timing
   template:
     metadata:
       labels:
-        app: hworld-client
+        app: server-timing
     spec:
       containers:
-      - name: hworld-client
-        image: hworld-client:0.0.1
+      - name: server-timing
+        image: server-timing:0.0.1
         ports:
         - containerPort: 80

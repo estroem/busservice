@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hworld-server-deployment
+  name: server-gps-deployment
   labels:
-    app: hworld-server
+    app: server-gps
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: hworld-server
+      app: server-gps
   template:
     metadata:
       labels:
-        app: hworld-server
+        app: server-gps
     spec:
       containers:
-      - name: hworld-server
-        image: hworld-server:0.0.1
+      - name: server-gps
+        image: server-gps:0.0.1
         ports:
         - containerPort: 80
