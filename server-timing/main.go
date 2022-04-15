@@ -55,7 +55,7 @@ func createAMQPQueue(name string, ch *amqp.Channel) amqp.Queue {
 	return q
 }
 
-func setupWebsocket(path string, consumer func(int, string, *websocket.Conn)) {
+func setupWebsocket(path string, consumer func(int, string, *websocket.Conn), sendFunc *(func(int, string))) {
 	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		conn, err := websocketUpgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -64,16 +64,29 @@ func setupWebsocket(path string, consumer func(int, string, *websocket.Conn)) {
 		}
 		defer conn.Close()
 
+		*sendFunc = func(msgType int, msg string) {
+			err := conn.WriteMessage(msgType, []byte(msg))
+			if err != nil {
+				log.Println("write failed:", err)
+			}
+		}
+
+		defer func() {
+			*sendFunc = nil
+		}()
+
 		for {
-			log.Default().Println("waiting for message")
 			msgType, message, err := conn.ReadMessage()
 			if err != nil {
-				log.Println("read failed:", err)
+				if msgType != -1 {
+					log.Println("read failed:", err)
+				}
 				break
 			}
-			consumer(msgType, string(message), conn)
+			if consumer != nil {
+				consumer(msgType, string(message), conn)
+			}
 		}
-		log.Default().Println("exiting websocket function")
 	})
 }
 
@@ -87,13 +100,8 @@ func presentData(data *[]Coordinates) string {
 	return string(encodeObject(*data))
 }
 
-func setupWebServer(data *[]Coordinates) {
-	setupWebsocket("/timing", func(msgType int, msg string, conn *websocket.Conn) {
-		err := conn.WriteMessage(msgType, []byte(presentData(data)))
-		if err != nil {
-			log.Println("write failed:", err)
-		}
-	})
+func setupWebServer(sendFunc *(func(int, string))) {
+	setupWebsocket("/timing", nil, sendFunc)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "/public/websockets.html")
@@ -104,12 +112,10 @@ func setupWebServer(data *[]Coordinates) {
 	}()
 }
 
-func setupMessageQueueListener(data *[]Coordinates) {
-	log.Printf("here3")
+func setupMessageQueueListener(queueName string, consumer func(string)) {
 	ch, conn := createAMQPChannel()
 
-	log.Printf("here3")
-	q := createAMQPQueue("vehicle-coordinates", ch)
+	q := createAMQPQueue(queueName, ch)
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
@@ -122,9 +128,7 @@ func setupMessageQueueListener(data *[]Coordinates) {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	log.Printf("here")
 	go func() {
-		log.Printf("here2")
 		defer ch.Close()
 		defer conn.Close()
 
@@ -133,9 +137,7 @@ func setupMessageQueueListener(data *[]Coordinates) {
 		go func() {
 			for d := range msgs {
 				log.Printf("Received a message: %s", d.Body)
-				data2 := Coordinates{}
-				json.Unmarshal(d.Body, &data2)
-				*data = append(*data, data2)
+				consumer(string(d.Body))
 			}
 		}()
 
@@ -150,8 +152,18 @@ func main() {
 
 	data := []Coordinates{}
 
-	setupWebServer(&data)
-	setupMessageQueueListener(&data)
+	var sendFunc func(int, string)
+	setupWebServer(&sendFunc)
+
+	setupMessageQueueListener("vehicle-coordinates", func(msg string) {
+		coords := Coordinates{}
+		json.Unmarshal([]byte(msg), &coords)
+		data = append(data, coords)
+
+		if sendFunc != nil {
+			sendFunc(websocket.TextMessage, presentData(&data))
+		}
+	})
 
 	<-make(chan bool)
 }
