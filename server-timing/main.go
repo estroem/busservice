@@ -14,29 +14,43 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func main() {
-	flag.Parse()
-
+func createAMQPChannel() (*amqp.Channel, *amqp.Connection) {
 	rabbitmq_username := GetConfig("rabbitmq_username")
 	rabbitmq_password := GetConfig("rabbitmq_password")
 
+	//setUpgRPCServer()
 	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@definition.default.svc.cluster.local:5672/", rabbitmq_username, rabbitmq_password))
 	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
 
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
+	return ch, conn
+}
+
+func createAMQPQueue(name string, ch *amqp.Channel) amqp.Queue {
+	args := make(amqp.Table)
+	args["x-message-ttl"] = 60000
 
 	q, err := ch.QueueDeclare(
-		"hello", // name
-		false,   // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
+		name,  // name
+		false, // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		args,  // arguments
 	)
 	failOnError(err, "Failed to declare a queue")
+	return q
+}
+
+func main() {
+	flag.Parse()
+
+	ch, conn := createAMQPChannel()
+	defer ch.Close()
+	defer conn.Close()
+
+	q := createAMQPQueue("vehicle-coordinates", ch)
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
