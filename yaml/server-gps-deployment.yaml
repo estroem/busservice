@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: server-gps
-        image: server-gps:0.0.1-SNAPSHOT
+        image: server-gps:0.0.1
         ports:
         - containerPort: 80

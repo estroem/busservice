@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: server-timing
-        image: server-timing:0.0.1-SNAPSHOT
+        image: server-timing:0.0.4
         ports:
         - containerPort: 80
