@@ -6,8 +6,7 @@ set +x
 
 cp config.go target/config.go.backup
 
-trap "mv target/config.go.backup config.go" EXIT
-trap "rm -rf target" EXIT
+trap "mv target/config.go.backup config.go; rm -rf target" EXIT
 
 RABBITMQ_USERNAME=`kubectl get secret definition-default-user -o jsonpath='{.data.username}' | base64 --decode`
 RABBITMQ_PASSWORD=`kubectl get secret definition-default-user -o jsonpath='{.data.password}' | base64 --decode`

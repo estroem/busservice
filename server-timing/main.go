@@ -6,8 +6,6 @@ import (
 	"log"
 
 	server "server-timing/internal/servers"
-
-	"github.com/gorilla/websocket"
 )
 
 type Coordinates struct {
@@ -28,25 +26,51 @@ func presentData(data *[]Coordinates) string {
 	return string(encodeObject(*data))
 }
 
+func isClosed(ch <-chan string) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+	}
+
+	return false
+}
+
 func main() {
 	flag.Parse()
 
+	data := []Coordinates{}
+	messageChannels := []server.NewChannel{}
+
+	newConnectionChannel := server.SetupWebServer()
+
+	go func() {
+		for {
+			newChannel := <-newConnectionChannel
+			messageChannels = append(messageChannels, newChannel)
+			log.Default().Printf("new connection: %s\n", newChannel.URI)
+		}
+	}()
+
 	rabbitmq_username := GetConfig("rabbitmq_username")
 	rabbitmq_password := GetConfig("rabbitmq_password")
-
-	data := []Coordinates{}
-
-	var sendFunc func(int, string)
-	server.SetupWebServer(&sendFunc)
 
 	server.SetupMessageQueueListener(rabbitmq_username, rabbitmq_password, "vehicle-coordinates", func(msg string) {
 		coords := Coordinates{}
 		json.Unmarshal([]byte(msg), &coords)
 		data = append(data, coords)
 
-		if sendFunc != nil {
-			sendFunc(websocket.TextMessage, presentData(&data))
+		str := presentData(&data)
+
+		for i := 0; i < len(messageChannels); i++ {
+			if !isClosed(messageChannels[i].Channel) {
+				messageChannels[i].Channel <- str
+			} else {
+				messageChannels = append(messageChannels[:i], messageChannels[i+1:]...)
+				i--
+			}
 		}
+
 	})
 
 	<-make(chan bool)
