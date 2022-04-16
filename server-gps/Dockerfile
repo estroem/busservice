@@ -1,4 +1,4 @@
 FROM alpine
 ADD VERSION .
-ADD target/main /
-CMD ["./main"]
+ADD target/server-gps /
+CMD ["./server-gps"]
