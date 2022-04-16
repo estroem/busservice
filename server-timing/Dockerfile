@@ -1,5 +1,5 @@
 FROM alpine
 ADD VERSION .
-ADD target/main /
+ADD target/server-timing /
 ADD public /public
-CMD ["./main"]
+CMD ["./server-timing"]
