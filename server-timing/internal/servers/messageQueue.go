@@ -7,6 +7,10 @@ import (
 	"github.com/streadway/amqp"
 )
 
+const (
+	TIME_TO_LIVE = 60 * 1000
+)
+
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
@@ -24,7 +28,7 @@ func createAMQPChannel(username string, password string) (*amqp.Channel, *amqp.C
 
 func createAMQPQueue(name string, ch *amqp.Channel) amqp.Queue {
 	args := make(amqp.Table)
-	args["x-message-ttl"] = 60000
+	args["x-message-ttl"] = TIME_TO_LIVE
 
 	q, err := ch.QueueDeclare(
 		name,  // name
