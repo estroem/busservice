@@ -2,11 +2,20 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
+	"fmt"
 	"log"
+	"regexp"
+	"strconv"
 
 	server "server-timing/internal/servers"
 )
+
+type WebsocketChannel struct {
+	StationId int32
+	Channel   chan string
+}
 
 type Coordinates struct {
 	BusId int32
@@ -36,19 +45,33 @@ func isClosed(ch <-chan string) bool {
 	return false
 }
 
+func convertChannel(channel server.NewChannel) (WebsocketChannel, error) {
+	regex, _ := regexp.Compile("stationId=([0-9]+)")
+	stationIdStr := regex.FindStringSubmatch(channel.URI)
+	if len(stationIdStr) != 2 || stationIdStr[1] == "" {
+		return WebsocketChannel{}, errors.New(fmt.Sprintf("could not find stationId in URI %s", channel.URI))
+	}
+	stationId, _ := strconv.Atoi(stationIdStr[1])
+	return WebsocketChannel{StationId: int32(stationId), Channel: channel.Channel}, nil
+}
+
 func main() {
 	flag.Parse()
 
 	data := []Coordinates{}
-	messageChannels := []server.NewChannel{}
+	messageChannels := []WebsocketChannel{}
 
 	newConnectionChannel := server.SetupWebServer()
 
 	go func() {
 		for {
-			newChannel := <-newConnectionChannel
+			newChannel, err := convertChannel(<-newConnectionChannel)
+			if err != nil {
+				log.Default().Print(err)
+				continue
+			}
 			messageChannels = append(messageChannels, newChannel)
-			log.Default().Printf("new connection: %s\n", newChannel.URI)
+			log.Default().Printf("new connection with stationId: %d\n", newChannel.StationId)
 		}
 	}()
 
@@ -70,7 +93,6 @@ func main() {
 				i--
 			}
 		}
-
 	})
 
 	<-make(chan bool)
