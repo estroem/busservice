@@ -29,7 +29,7 @@
 
     function connect() {
         const stationId = parseInt(input.value)
-        socket = new WebSocket("ws://helloworld.info/timing?stationId=" + stationId)
+        socket = new WebSocket("ws://helloworld.info/eta?stationId=" + stationId)
 
         socket.onopen = function () {
             status.innerHTML = "Status: Connected\n"

@@ -2,7 +2,7 @@ package algorithm
 
 import (
 	"math"
-	"server-timing/internal/routes"
+	"server-eta/internal/routes"
 	"testing"
 )
 

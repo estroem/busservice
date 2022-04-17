@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	routes "server-timing/internal/routes"
+	routes "server-eta/internal/routes"
 )
 
 type AlgorithmState struct {

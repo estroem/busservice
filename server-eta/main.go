@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"strconv"
 
-	algorithm "server-timing/internal/algorithm"
-	"server-timing/internal/routes"
-	server "server-timing/internal/servers"
+	algorithm "server-eta/internal/algorithm"
+	"server-eta/internal/routes"
+	server "server-eta/internal/servers"
 )
 
 type WebsocketChannel struct {

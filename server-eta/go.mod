@@ -1,4 +1,4 @@
-module server-timing
+module server-eta
 
 go 1.18
 

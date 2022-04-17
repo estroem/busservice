@@ -19,7 +19,7 @@ set -x
 go build -o target ./...
 
 # image name
-IMAGE=server-timing
+IMAGE=server-eta
 VERSION=`cat VERSION`
 
 docker build -t $IMAGE:$VERSION .

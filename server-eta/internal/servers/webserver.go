@@ -75,7 +75,7 @@ func setupWebsocket(path string) <-chan NewChannel {
 }
 
 func SetupWebServer() <-chan NewChannel {
-	newConnChan := setupWebsocket("/timing")
+	newConnChan := setupWebsocket("/eta")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "/public/websockets.html")

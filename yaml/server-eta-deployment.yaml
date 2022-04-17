@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: server-timing-deployment
+  name: server-eta-deployment
   labels:
-    app: server-timing
+    app: server-eta
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: server-timing
+      app: server-eta
   template:
     metadata:
       labels:
-        app: server-timing
+        app: server-eta
     spec:
       containers:
-      - name: server-timing
-        image: server-timing:0.0.4
+      - name: server-eta
+        image: server-eta:0.0.4
         ports:
         - containerPort: 80
