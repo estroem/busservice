@@ -29,6 +29,18 @@ func isClosed(ch <-chan string) bool {
 	return false
 }
 
+func encodeObject(v any) []byte {
+	enc, err := json.Marshal(v)
+	if err != nil {
+		log.Fatalf("Failed to marshal message: %s", err)
+	}
+	return enc
+}
+
+func presentData(data *map[int32]float64) string {
+	return string(encodeObject(*data))
+}
+
 func convertChannel(channel server.NewChannel) (WebsocketChannel, error) {
 	regex, _ := regexp.Compile("stationId=([0-9]+)")
 	stationIdStr := regex.FindStringSubmatch(channel.URI)
@@ -48,7 +60,7 @@ func sliceContains(item int32, slice []int32) bool {
 	return false
 }
 
-func presentData(times map[int32]float64) string {
+func presentData2(times map[int32]float64) string {
 	str := ""
 	for busId, minutesUntilArrival := range times {
 		str += fmt.Sprintf("BusId %d: %f minutes until arrival\n", busId, minutesUntilArrival)
@@ -70,7 +82,7 @@ func initState() algorithm.AlgorithmState {
 	route := routes.Route{
 		Id:                 1,
 		Stations:           []routes.Station{station1, station2},
-		AvgTimeBtwStations: []float64{1},
+		AvgTimeBtwStations: []float64{5},
 	}
 	buses := map[int32]algorithm.Bus{
 		3: {
@@ -125,7 +137,7 @@ func main() {
 			if !isClosed(messageChannels[i].Channel) {
 				if sliceContains(messageChannels[i].StationId, updatedStations) {
 					if times, found := state.StationsWithTimes[messageChannels[i].StationId]; found {
-						messageChannels[i].Channel <- presentData(times.Times)
+						messageChannels[i].Channel <- presentData(&times.Times)
 					}
 				}
 			} else {
