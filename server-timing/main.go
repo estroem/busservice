@@ -10,24 +10,13 @@ import (
 	"strconv"
 
 	algorithm "server-timing/internal/algorithm"
+	"server-timing/internal/routes"
 	server "server-timing/internal/servers"
 )
 
 type WebsocketChannel struct {
 	StationId int32
 	Channel   chan string
-}
-
-func encodeObject(v any) []byte {
-	enc, err := json.Marshal(v)
-	if err != nil {
-		log.Fatalf("Failed to marshal message: %s", err)
-	}
-	return enc
-}
-
-func presentData(data *[]algorithm.Coordinates) string {
-	return string(encodeObject(*data))
 }
 
 func isClosed(ch <-chan string) bool {
@@ -50,11 +39,60 @@ func convertChannel(channel server.NewChannel) (WebsocketChannel, error) {
 	return WebsocketChannel{StationId: int32(stationId), Channel: channel.Channel}, nil
 }
 
+func sliceContains(item int32, slice []int32) bool {
+	for _, el := range slice {
+		if el == item {
+			return true
+		}
+	}
+	return false
+}
+
+func presentData(times map[int32]float64) string {
+	str := ""
+	for busId, minutesUntilArrival := range times {
+		str += fmt.Sprintf("BusId %d: %f minutes until arrival\n", busId, minutesUntilArrival)
+	}
+	return str
+}
+
+func initState() algorithm.AlgorithmState {
+	station1 := routes.Station{
+		Id: 1,
+		X:  0,
+		Y:  0,
+	}
+	station2 := routes.Station{
+		Id: 3,
+		X:  0,
+		Y:  1,
+	}
+	route := routes.Route{
+		Id:                 1,
+		Stations:           []routes.Station{station1, station2},
+		AvgTimeBtwStations: []float64{1},
+	}
+	buses := map[int32]algorithm.Bus{
+		3: {
+			Id:               3,
+			X:                0,
+			Y:                0,
+			Route:            route,
+			LastStation:      routes.Station{},
+			LastStationKnown: false,
+		},
+	}
+	return algorithm.AlgorithmState{
+		Buses:             buses,
+		StationsWithTimes: map[int32]algorithm.StationWithTimes{},
+	}
+}
+
 func main() {
 	flag.Parse()
 
-	data := []algorithm.Coordinates{}
 	messageChannels := []WebsocketChannel{}
+	state := initState()
 
 	newConnectionChannel := server.SetupWebServer()
 
@@ -76,13 +114,20 @@ func main() {
 	server.SetupMessageQueueListener(rabbitmq_username, rabbitmq_password, "vehicle-coordinates", func(msg string) {
 		coords := algorithm.Coordinates{}
 		json.Unmarshal([]byte(msg), &coords)
-		data = append(data, coords)
 
-		str := presentData(&data)
+		updatedStations, err := algorithm.UpdateTiming(coords, state)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
 		for i := 0; i < len(messageChannels); i++ {
 			if !isClosed(messageChannels[i].Channel) {
-				messageChannels[i].Channel <- str
+				if sliceContains(messageChannels[i].StationId, updatedStations) {
+					if times, found := state.StationsWithTimes[messageChannels[i].StationId]; found {
+						messageChannels[i].Channel <- presentData(times.Times)
+					}
+				}
 			} else {
 				messageChannels = append(messageChannels[:i], messageChannels[i+1:]...)
 				i--
