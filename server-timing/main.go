@@ -45,7 +45,7 @@ func convertChannel(channel server.NewChannel) (WebsocketChannel, error) {
 	regex, _ := regexp.Compile("stationId=([0-9]+)")
 	stationIdStr := regex.FindStringSubmatch(channel.URI)
 	if len(stationIdStr) != 2 || stationIdStr[1] == "" {
-		return WebsocketChannel{}, errors.New(fmt.Sprintf("could not find stationId in URI %s", channel.URI))
+		return WebsocketChannel{StationId: -1, Channel: channel.Channel}, errors.New(fmt.Sprintf("could not find stationId in URI %s", channel.URI))
 	}
 	stationId, _ := strconv.Atoi(stationIdStr[1])
 	return WebsocketChannel{StationId: int32(stationId), Channel: channel.Channel}, nil
@@ -112,11 +112,15 @@ func main() {
 		for {
 			newChannel, err := convertChannel(<-newConnectionChannel)
 			if err != nil {
+				close(newChannel.Channel)
 				log.Default().Print(err)
 				continue
 			}
 			messageChannels = append(messageChannels, newChannel)
 			log.Default().Printf("new connection with stationId: %d\n", newChannel.StationId)
+			if times, found := state.StationsWithTimes[newChannel.StationId]; found {
+				newChannel.Channel <- presentData(&times.Times)
+			}
 		}
 	}()
 
