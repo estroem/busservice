@@ -9,18 +9,13 @@ import (
 	"regexp"
 	"strconv"
 
+	algorithm "server-timing/internal/algorithm"
 	server "server-timing/internal/servers"
 )
 
 type WebsocketChannel struct {
 	StationId int32
 	Channel   chan string
-}
-
-type Coordinates struct {
-	BusId int32
-	X     float64
-	Y     float64
 }
 
 func encodeObject(v any) []byte {
@@ -31,7 +26,7 @@ func encodeObject(v any) []byte {
 	return enc
 }
 
-func presentData(data *[]Coordinates) string {
+func presentData(data *[]algorithm.Coordinates) string {
 	return string(encodeObject(*data))
 }
 
@@ -58,7 +53,7 @@ func convertChannel(channel server.NewChannel) (WebsocketChannel, error) {
 func main() {
 	flag.Parse()
 
-	data := []Coordinates{}
+	data := []algorithm.Coordinates{}
 	messageChannels := []WebsocketChannel{}
 
 	newConnectionChannel := server.SetupWebServer()
@@ -79,7 +74,7 @@ func main() {
 	rabbitmq_password := GetConfig("rabbitmq_password")
 
 	server.SetupMessageQueueListener(rabbitmq_username, rabbitmq_password, "vehicle-coordinates", func(msg string) {
-		coords := Coordinates{}
+		coords := algorithm.Coordinates{}
 		json.Unmarshal([]byte(msg), &coords)
 		data = append(data, coords)
 
