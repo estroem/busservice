@@ -17,7 +17,7 @@ type Coordinates struct {
 }
 
 func createRandomGPSCoords(busId int32) Coordinates {
-	x := rand.Float64()
+	x := 0.0 //rand.Float64()
 	y := rand.Float64()
 	return Coordinates{BusId: busId, X: x, Y: y}
 }
@@ -43,7 +43,7 @@ func main() {
 	q := server.CreateAMQPQueue("vehicle-coordinates", ch)
 
 	for {
-		var busId int32 = rand.Int31n(100)
+		var busId int32 = 3
 		server.SendMessage(encodeObject(createRandomGPSCoords(busId)), q, ch)
 		time.Sleep(20 * time.Second)
 	}
