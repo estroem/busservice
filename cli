@@ -1,0 +1,25 @@
+#!/bin/bash
+
+COMMAND=$1
+
+if [[ $COMMAND = "create" ]]
+then
+    NAME=$2
+    cp -r server-template $NAME
+    pushd $NAME
+    sed -i 's/%MODULE_NAME%/'$NAME'/' go.mod
+    sed -i 's/%MODULE_NAME%/'$NAME'/' main.go
+    go mod tidy
+    popd
+    pushd yaml
+    cp templates/server-template-deployment.yaml $NAME-deployment.yaml
+    cp templates/server-template-service.yaml $NAME-service.yaml
+    sed -i 's/%MODULE_NAME%/'$NAME'/' $NAME-deployment.yaml
+    sed -i 's/%MODULE_NAME%/'$NAME'/' $NAME-service.yaml
+    popd
+fi
+
+if [[ $COMMAND = "build" ]]
+then
+    ./build.sh
+fi

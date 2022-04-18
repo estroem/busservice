@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: %MODULE_NAME%-deployment
+  labels:
+    app: %MODULE_NAME%
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: %MODULE_NAME%
+  template:
+    metadata:
+      labels:
+        app: %MODULE_NAME%
+    spec:
+      containers:
+      - name: %MODULE_NAME%
+        image: %MODULE_NAME%:0.0.1
+        ports:
+        - containerPort: 80
