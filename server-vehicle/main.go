@@ -5,9 +5,14 @@ import (
 	"flag"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 
 	"server-vehicle/internal/server"
+)
+
+var (
+	mapMutex sync.Mutex
 )
 
 type VehicleStarting struct {
@@ -28,18 +33,22 @@ func encodeObject(v any) string {
 }
 
 func getRandomNotIn(limit int32, list map[int32]int32) int32 {
+	mapMutex.Lock()
 	for {
 		num := rand.Int31n(limit)
 		if _, found := list[num]; !found {
+			mapMutex.Unlock()
 			return num
 		}
 	}
 }
 
 func getRandomIn(limit int32, list map[int32]int32) int32 {
+	mapMutex.Lock()
 	for {
 		num := rand.Int31n(limit)
 		if _, found := list[num]; found {
+			mapMutex.Unlock()
 			return num
 		}
 	}
@@ -66,7 +75,11 @@ func main() {
 					VehicleId: getRandomNotIn(30, runningVehicles),
 					RouteId:   rand.Int31n(5),
 				}
+
+				mapMutex.Lock()
 				runningVehicles[message.VehicleId] = message.RouteId
+				mapMutex.Unlock()
+
 				server.SendMessage(encodeObject(message), startingQueue)
 				time.Sleep(20 * time.Second)
 			}
@@ -78,7 +91,11 @@ func main() {
 			message := VehicleStopping{
 				VehicleId: getRandomIn(10, runningVehicles),
 			}
+
+			mapMutex.Lock()
 			delete(runningVehicles, message.VehicleId)
+			mapMutex.Unlock()
+
 			server.SendMessage(encodeObject(message), stoppingQueue)
 			time.Sleep(20 * time.Second)
 		}
