@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-vehicle-deployment
+  labels:
+    app: server-vehicle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-vehicle
+  template:
+    metadata:
+      labels:
+        app: server-vehicle
+    spec:
+      containers:
+      - name: server-vehicle
+        image: server-vehicle:0.0.1
+        ports:
+        - containerPort: 80
