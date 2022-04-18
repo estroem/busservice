@@ -65,3 +65,24 @@ func SendMessage(body string, q amqp.Queue) {
 		})
 	failOnError(err, "Failed to publish a message")
 }
+
+func Listen(queueName string) <-chan string {
+	msgs, err := channel.Consume(
+		queueName, // queue
+		"",        // consumer
+		true,      // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
+	)
+	failOnError(err, "Failed to register a consumer")
+
+	channel := make(chan string)
+	go func() {
+		for d := range msgs {
+			channel <- string(d.Body)
+		}
+	}()
+	return channel
+}
