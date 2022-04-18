@@ -12,10 +12,11 @@ then
     go mod tidy
     popd
     pushd yaml
-    cp templates/server-template-deployment.yaml $NAME-deployment.yaml
-    cp templates/server-template-service.yaml $NAME-service.yaml
-    sed -i 's/%MODULE_NAME%/'$NAME'/' $NAME-deployment.yaml
-    sed -i 's/%MODULE_NAME%/'$NAME'/' $NAME-service.yaml
+    cp -r templates $NAME
+    mv $NAME/server-template-deployment.yaml $NAME/$NAME-deployment.yaml
+    mv $NAME/server-template-service.yaml $NAME/$NAME-service.yaml
+    sed -i 's/%MODULE_NAME%/'$NAME'/' $NAME/$NAME-deployment.yaml
+    sed -i 's/%MODULE_NAME%/'$NAME'/' $NAME/$NAME-service.yaml
     popd
 fi
 
