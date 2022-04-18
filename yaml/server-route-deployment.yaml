@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-route-deployment
+  labels:
+    app: server-route
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-route
+  template:
+    metadata:
+      labels:
+        app: server-route
+    spec:
+      containers:
+      - name: server-route
+        image: server-route:0.0.1
+        ports:
+        - containerPort: 80
