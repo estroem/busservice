@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 
 	"server-route/internal/server"
@@ -105,12 +104,7 @@ func initRoutes() []Route {
 }
 
 func main() {
-	flag.Parse()
-
-	rabbitmq_username := GetConfig("rabbitmq_username")
-	rabbitmq_password := GetConfig("rabbitmq_password")
-
-	server.CreateChannel(rabbitmq_username, rabbitmq_password)
+	server.CreateChannel(GetConfig("rabbitmq_username"), GetConfig("rabbitmq_password"))
 	defer server.CloseConnection()
 
 	stations := initStations()
@@ -119,10 +113,16 @@ func main() {
 	requestQueue := server.CreateQueue("routes-list-request")
 	listQueue := server.CreateQueue("routes-list")
 
+	msg := server.EncodeObject(RoutesListMessage{Routes: routes, Stations: stations})
+	listener := server.Listen(requestQueue.Name)
+
 	log.Default().Println("started server-route")
 
 	for {
-		<-server.Listen(requestQueue.Name)
-		server.SendMessageObj(RoutesListMessage{Routes: routes, Stations: stations}, listQueue)
+		log.Default().Println("listening for requests")
+		<-listener
+		log.Default().Println("received request")
+		server.SendMessage(string(msg), listQueue)
+		log.Default().Println("responsed to request")
 	}
 }

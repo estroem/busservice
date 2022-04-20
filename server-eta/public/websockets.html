@@ -38,7 +38,7 @@
         socket.onmessage = function (e) {
             const data = JSON.parse(e.data)
             const keys = Object.keys(data)
-            output.innerHTML = keys.map(busId => `Bus ${busId}: ${Math.round(data[busId])} min<br>`)
+            output.innerHTML = keys.map(busId => `Bus ${busId}: ${Math.round(data[busId])} min`).join('<br>')
         }
     }
   </script>

@@ -11,15 +11,15 @@ import (
 )
 
 type Coordinates struct {
-	BusId int32
-	X     float64
-	Y     float64
+	VehicleId int32
+	X         float64
+	Y         float64
 }
 
-func createRandomGPSCoords(busId int32) Coordinates {
-	x := 0.0 //rand.Float64()
+func createRandomGPSCoords(vehicleId int32) Coordinates {
+	x := rand.Float64()
 	y := rand.Float64()
-	return Coordinates{BusId: busId, X: x, Y: y}
+	return Coordinates{VehicleId: vehicleId, X: x, Y: y}
 }
 
 func encodeObject(v any) []byte {
@@ -43,8 +43,8 @@ func main() {
 	q := server.CreateAMQPQueue("vehicle-coordinates", ch)
 
 	for {
-		var busId int32 = 3
+		var busId int32 = rand.Int31n(20)
 		server.SendMessage(encodeObject(createRandomGPSCoords(busId)), q, ch)
-		time.Sleep(20 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }

@@ -56,7 +56,7 @@ func SendMessage(body string, q amqp.Queue) {
 	failOnError(err, "Failed to publish a message")
 }
 
-func encodeObject(v any) []byte {
+func EncodeObject(v any) []byte {
 	enc, err := json.Marshal(v)
 	if err != nil {
 		log.Fatalf("Failed to marshal message: %s", err)
@@ -67,7 +67,7 @@ func encodeObject(v any) []byte {
 func SendMessageObj(obj any, q amqp.Queue) {
 	pub := amqp.Publishing{
 		ContentType: "application/json",
-		Body:        encodeObject(obj),
+		Body:        EncodeObject(obj),
 	}
 	err := channel.Publish("", q.Name, false, false, pub)
 	failOnError(err, "Failed to publish a message")

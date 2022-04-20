@@ -16,16 +16,6 @@ type NewChannel struct {
 	Channel chan string
 }
 
-func isClosed(ch <-chan string) bool {
-	select {
-	case <-ch:
-		return true
-	default:
-	}
-
-	return false
-}
-
 func setupWebsocket(path string) <-chan NewChannel {
 	newConnectionChannel := make(chan NewChannel)
 
@@ -43,11 +33,17 @@ func setupWebsocket(path string) <-chan NewChannel {
 
 		go func() {
 			for {
-				if isClosed(messageChannel) {
+				log.Default().Println("ready to send")
+
+				msg, open := <-messageChannel
+				if !open {
+					log.Default().Println("message channel is closed")
 					break
 				}
 
-				err := conn.WriteMessage(websocket.TextMessage, []byte(<-messageChannel))
+				log.Default().Printf("sending message %s", msg)
+
+				err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
 				if err != nil {
 					log.Println("write failed:", err)
 				}
@@ -55,6 +51,7 @@ func setupWebsocket(path string) <-chan NewChannel {
 		}()
 
 		defer func() {
+			log.Default().Println("closing message channel")
 			close(messageChannel)
 		}()
 

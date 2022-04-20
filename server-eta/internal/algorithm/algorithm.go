@@ -5,42 +5,43 @@ import (
 	"fmt"
 	"math"
 
-	routes "server-eta/internal/routes"
+	"server-eta/internal/routes"
+	"server-eta/internal/vehicles"
 )
 
 type AlgorithmState struct {
-	Buses             map[int32]Bus
-	StationsWithTimes map[int32]StationWithTimes
-}
-
-type Bus struct {
-	Id               int32
-	X                float64
-	Y                float64
-	Route            routes.Route
-	LastStation      routes.Station
-	LastStationKnown bool
+	Routes            routes.RouteList
+	Vehicles          vehicles.VehicleList
+	StationsWithTimes map[int]StationWithTimes
 }
 
 type Coordinates struct {
-	BusId int32
-	X     float64
-	Y     float64
+	VehicleId int
+	X         float64
+	Y         float64
 }
 
 type StationWithTimes struct {
 	Station routes.Station
-	Times   map[int32]float64
+	Times   map[int]float64
 }
 
-func calcDistanceFromBusToRoute(station1 routes.Station, station2 routes.Station, bus Bus) (float64, float64, float64, error) {
+func getRouteForVehicle(vehicleId int, st AlgorithmState) (routes.Route, bool) {
+	if routeId, ok := st.Vehicles.RoutesByVehicle[vehicleId]; ok {
+		return st.Routes.GetRouteById(routeId)
+	} else {
+		return routes.Route{}, false
+	}
+}
+
+func calcDistanceFromVehicleToRoute(station1 routes.Station, station2 routes.Station, vehicle vehicles.Vehicle) (float64, float64, float64, error) {
 	stationToStationDeltaX := station2.X - station1.X
 	stationToStationDeltaY := station2.Y - station1.Y
 
-	stationToBusDeltaX := bus.X - station1.X
-	stationToBusDeltaY := bus.Y - station1.Y
+	stationToVehicleDeltaX := vehicle.X - station1.X
+	stationToVehicleDeltaY := vehicle.Y - station1.Y
 
-	dotProduct := stationToStationDeltaX*stationToBusDeltaX + stationToStationDeltaY*stationToBusDeltaY
+	dotProduct := stationToStationDeltaX*stationToVehicleDeltaX + stationToStationDeltaY*stationToVehicleDeltaY
 	lengthSquared := math.Pow(stationToStationDeltaX, 2) + math.Pow(stationToStationDeltaY, 2)
 
 	if lengthSquared == 0 {
@@ -63,34 +64,43 @@ func calcDistanceFromBusToRoute(station1 routes.Station, station2 routes.Station
 		closestPointOnLineY = station1.Y + coefficient*stationToStationDeltaY
 	}
 
-	diffX := bus.X - closestPointOnLineX
-	diffY := bus.Y - closestPointOnLineY
+	diffX := vehicle.X - closestPointOnLineX
+	diffY := vehicle.Y - closestPointOnLineY
 
 	return math.Sqrt(math.Pow(diffX, 2) + math.Pow(diffY, 2)), closestPointOnLineX, closestPointOnLineY, nil
 }
 
-func UpdateTiming(coords Coordinates, state AlgorithmState) ([]int32, error) {
-	bus, ok := state.Buses[coords.BusId]
+func UpdateTiming(coords Coordinates, state AlgorithmState) ([]int, error) {
+	vehicle, ok := state.Vehicles.GetById(coords.VehicleId)
 
 	if !ok {
-		return []int32{}, errors.New(fmt.Sprintf("bus with id %d not found", coords.BusId))
+		return []int{}, errors.New(fmt.Sprintf("vehicle with id %d not found", coords.VehicleId))
 	}
 
-	bus.X = coords.X
-	bus.Y = coords.Y
-	state.Buses[coords.BusId] = bus
+	vehicle.X = coords.X
+	vehicle.Y = coords.Y
+	//state.Vehicles[coords.VehicleId] = vehicle
 
-	route := bus.Route
+	route, found := getRouteForVehicle(coords.VehicleId, state)
+
+	if !found {
+		return []int{}, errors.New(fmt.Sprintf("cannot found route for vehicle with id %d", coords.VehicleId))
+	}
+
+	getStationByIndex := func(i int) routes.Station {
+		station, _ := state.Routes.GetStationById(route.Stations[i])
+		return station
+	}
 
 	if len(route.Stations) < 2 {
-		return []int32{}, errors.New(fmt.Sprintf("route %d has less than 2 stations", route.Id))
+		return []int{}, errors.New(fmt.Sprintf("route %d has less than 2 stations", route.Id))
 	}
 
 	var startingStationIx int
 
-	if bus.LastStationKnown {
+	if vehicle.LastStationKnown {
 		for i := 0; i < len(route.Stations); i++ {
-			if route.Stations[i].Id == bus.LastStation.Id {
+			if route.Stations[i] == vehicle.LastStation {
 				startingStationIx = i
 			}
 		}
@@ -104,43 +114,43 @@ func UpdateTiming(coords Coordinates, state AlgorithmState) ([]int32, error) {
 	var closestPointOnLineY float64
 
 	for i := startingStationIx; i < len(route.Stations)-1; i++ {
-		distanceFromBusToRoute, pointOnLineX, pointOnLineY, err := calcDistanceFromBusToRoute(route.Stations[i], route.Stations[i+1], bus)
+		distanceFromVehicleToRoute, pointOnLineX, pointOnLineY, err := calcDistanceFromVehicleToRoute(getStationByIndex(i), getStationByIndex(i+1), vehicle)
 		if err != nil {
 			continue
 		}
 
-		if shortestDistanceIx == -1 || distanceFromBusToRoute < shortestDistance {
-			shortestDistance = distanceFromBusToRoute
+		if shortestDistanceIx == -1 || distanceFromVehicleToRoute < shortestDistance {
+			shortestDistance = distanceFromVehicleToRoute
 			shortestDistanceIx = i
 			closestPointOnLineX = pointOnLineX
 			closestPointOnLineY = pointOnLineY
 		}
 	}
 
-	distanceToNextStopX := route.Stations[shortestDistanceIx+1].X - closestPointOnLineX
-	distanceToNextStopY := route.Stations[shortestDistanceIx+1].Y - closestPointOnLineY
+	distanceToNextStopX := getStationByIndex(shortestDistanceIx+1).X - closestPointOnLineX
+	distanceToNextStopY := getStationByIndex(shortestDistanceIx+1).Y - closestPointOnLineY
 	distanceToNextStop := math.Sqrt(math.Pow(distanceToNextStopX, 2) + math.Pow(distanceToNextStopY, 2))
-	lengthCurrentStretchX := route.Stations[shortestDistanceIx+1].X - route.Stations[shortestDistanceIx].X
-	lengthCurrentStretchY := route.Stations[shortestDistanceIx+1].Y - route.Stations[shortestDistanceIx].Y
+	lengthCurrentStretchX := getStationByIndex(shortestDistanceIx+1).X - getStationByIndex(shortestDistanceIx).X
+	lengthCurrentStretchY := getStationByIndex(shortestDistanceIx+1).Y - getStationByIndex(shortestDistanceIx).Y
 	lengthCurrentStretch := math.Sqrt(math.Pow(lengthCurrentStretchX, 2) + math.Pow(lengthCurrentStretchY, 2))
 	fractionOfCurrentStrecthLeft := distanceToNextStop / lengthCurrentStretch
-	timeLeftCurrentStretch := route.AvgTimeBtwStations[shortestDistanceIx] * fractionOfCurrentStrecthLeft
+	timeLeftCurrentStretch := route.AvgTimeBetweenStations[shortestDistanceIx] * fractionOfCurrentStrecthLeft
 
 	timeToNextStation := timeLeftCurrentStretch
 
-	var updatedStations []int32
+	var updatedStations []int
 
 	for i := shortestDistanceIx + 1; i < len(route.Stations); i++ {
-		if station, ok := state.StationsWithTimes[route.Stations[i].Id]; ok {
-			station.Times[bus.Id] = timeLeftCurrentStretch
-			state.StationsWithTimes[route.Stations[i].Id] = station
+		if station, ok := state.StationsWithTimes[route.Stations[i]]; ok {
+			station.Times[vehicle.Id] = timeLeftCurrentStretch
+			state.StationsWithTimes[route.Stations[i]] = station
 		} else {
-			obj := StationWithTimes{Station: route.Stations[i], Times: map[int32]float64{bus.Id: timeLeftCurrentStretch}}
-			state.StationsWithTimes[route.Stations[i].Id] = obj
+			obj := StationWithTimes{Station: getStationByIndex(i), Times: map[int]float64{vehicle.Id: timeLeftCurrentStretch}}
+			state.StationsWithTimes[route.Stations[i]] = obj
 		}
-		updatedStations = append(updatedStations, route.Stations[i].Id)
+		updatedStations = append(updatedStations, route.Stations[i])
 		if i < len(route.Stations)-1 {
-			timeToNextStation += route.AvgTimeBtwStations[i]
+			timeToNextStation += route.AvgTimeBetweenStations[i]
 		}
 	}
 
