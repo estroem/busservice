@@ -76,3 +76,10 @@ func FetchRoutes() RouteList {
 
 	return RouteList{routes: routes, stations: stations}
 }
+
+func CreateRouteList(routes []Route, stations []Station) RouteList {
+	return RouteList{
+		routes:   routes,
+		stations: stations,
+	}
+}

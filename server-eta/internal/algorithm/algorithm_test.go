@@ -3,6 +3,7 @@ package algorithm
 import (
 	"math"
 	"server-eta/internal/routes"
+	"server-eta/internal/vehicles"
 	"testing"
 )
 
@@ -23,21 +24,15 @@ func TestCalcDistanceFromBusToRoute(t *testing.T) {
 		X:  1,
 		Y:  1,
 	}
-	route := routes.Route{
-		Id:                 1,
-		Stations:           []routes.Station{station1, station2},
-		AvgTimeBtwStations: []float64{1},
-	}
-	bus := Bus{
+	vehicle := vehicles.Vehicle{
 		Id:               1,
 		X:                0.5,
 		Y:                0.5,
-		Route:            route,
-		LastStation:      routes.Station{},
+		LastStation:      -1,
 		LastStationKnown: false,
 	}
 
-	a, b, c, err := calcDistanceFromBusToRoute(station1, station2, bus)
+	a, b, c, err := calcDistanceFromVehicleToRoute(station1, station2, vehicle)
 
 	t.Logf("a=%f, b=%f, c=%f\n", a, b, c)
 
@@ -69,21 +64,15 @@ func TestCalcDistanceFromBusToRoute2(t *testing.T) {
 		X:  0,
 		Y:  1,
 	}
-	route := routes.Route{
-		Id:                 1,
-		Stations:           []routes.Station{station1, station2},
-		AvgTimeBtwStations: []float64{1},
-	}
-	bus := Bus{
+	vehicle := vehicles.Vehicle{
 		Id:               1,
 		X:                0.5,
 		Y:                0.5,
-		Route:            route,
-		LastStation:      routes.Station{},
+		LastStation:      -1,
 		LastStationKnown: false,
 	}
 
-	a, b, c, err := calcDistanceFromBusToRoute(station1, station2, bus)
+	a, b, c, err := calcDistanceFromVehicleToRoute(station1, station2, vehicle)
 
 	t.Logf("a=%f, b=%f, c=%f\n", a, b, c)
 
@@ -116,28 +105,28 @@ func TestUpdateTiming(t *testing.T) {
 		Y:  1,
 	}
 	route := routes.Route{
-		Id:                 1,
-		Stations:           []routes.Station{station1, station2},
-		AvgTimeBtwStations: []float64{1},
+		Id:                     1,
+		Stations:               []int{1, 2},
+		AvgTimeBetweenStations: []float64{1},
 	}
-	bus := Bus{
+	vehicle := vehicles.Vehicle{
 		Id:               1,
 		X:                0.5,
 		Y:                0.5,
-		Route:            route,
-		LastStation:      routes.Station{},
+		LastStation:      -1,
 		LastStationKnown: false,
 	}
 
 	state := AlgorithmState{
-		Buses:             map[int32]Bus{bus.Id: bus},
-		StationsWithTimes: map[int32]StationWithTimes{},
+		Routes:            routes.CreateRouteList([]routes.Route{route}, []routes.Station{station1, station2}),
+		Vehicles:          vehicles.VehicleList{Vehicles: []vehicles.Vehicle{vehicle}},
+		StationsWithTimes: map[int]StationWithTimes{},
 	}
 
 	coords := Coordinates{
-		BusId: bus.Id,
-		X:     bus.X,
-		Y:     bus.Y,
+		VehicleId: vehicle.Id,
+		X:         vehicle.X,
+		Y:         vehicle.Y,
 	}
 
 	updatedStations, err := UpdateTiming(coords, state)
