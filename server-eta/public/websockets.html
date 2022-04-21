@@ -28,6 +28,10 @@
     let socket
 
     function connect() {
+        if(socket) {
+            socket.close()
+        }
+
         const stationId = parseInt(input.value)
         socket = new WebSocket("ws://busservice.info/eta?stationId=" + stationId)
 
