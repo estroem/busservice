@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-etasign-deployment
+  labels:
+    app: client-etasign
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client-etasign
+  template:
+    metadata:
+      labels:
+        app: client-etasign
+    spec:
+      containers:
+      - name: client-etasign
+        image: client-etasign:0.0.1
+        ports:
+        - containerPort: 80

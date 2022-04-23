@@ -72,7 +72,7 @@ func setupWebsocket(path string) <-chan NewChannel {
 }
 
 func SetupWebServer() <-chan NewChannel {
-	newConnChan := setupWebsocket("/eta")
+	newConnChan := setupWebsocket("/web/eta")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "/public/websockets.html")

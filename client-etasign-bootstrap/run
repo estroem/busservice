@@ -1,0 +1,5 @@
+#!/bin/bash
+
+curl -s -o etasign http://busservice.info/etasign
+chmod +x etasign
+./etasign `cat STATION_ID`

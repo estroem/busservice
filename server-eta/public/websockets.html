@@ -33,7 +33,7 @@
         }
 
         const stationId = parseInt(input.value)
-        socket = new WebSocket("ws://busservice.info/eta?stationId=" + stationId)
+        socket = new WebSocket("ws://busservice.info/web/eta?stationId=" + stationId)
 
         socket.onopen = function () {
             status.innerHTML = "Status: Connected\n"

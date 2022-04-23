@@ -7,11 +7,18 @@ spec:
     - host: busservice.info
       http:
         paths:
-          - path: /
+          - path: /web
             pathType: Prefix
             backend:
               service:
                 name: server-eta-service
+                port:
+                  number: 8080
+          - path: /etasign
+            pathType: Prefix
+            backend:
+              service:
+                name: client-etasign-service
                 port:
                   number: 8080
 
